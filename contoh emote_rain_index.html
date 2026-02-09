@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Untuk fer</title>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; height: 100vh; font-family: 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at top, #1c2b45, #0e1625);
+  overflow: hidden; display: flex; justify-content: center; align-items: center;
+  position: relative;
+}
+
+/* Animasi Emoji Jatuh */
+.falling-emoji {
+  position: absolute;
+  top: -50px;
+  font-size: 24px;
+  user-select: none;
+  pointer-events: none;
+  z-index: 0;
+  animation: fall linear forwards;
+}
+
+@keyframes fall {
+  to { transform: translateY(110vh) rotate(360deg); }
+}
+
+.side { position: absolute; top: 0; width: 60px; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-around; align-items: center; z-index: 1; }
+.left { left: 5px; } .right { right: 5px; }
+.side span { font-size: 22px; opacity: 0.5; animation: floatSide 4s ease-in-out infinite; }
+@keyframes floatSide { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(15deg); } }
+
+.card {
+  width: 95%; max-width: 420px; min-height: 480px;
+  background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+  border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  display: flex; flex-direction: column; justify-content: space-between; z-index: 10; color: white;
+}
+
+#game-container { display: none; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px auto; width: 100%; }
+.memory-card {
+  height: 85px; background: rgba(161, 196, 253, 0.2); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 35px; color: transparent; cursor: pointer; transition: 0.4s; border: 1px solid rgba(255,255,255,0.1);
+}
+.memory-card.flipped { background: white; color: initial; transform: rotateY(180deg); }
+
+#text { font-size: 16px; line-height: 1.6; min-height: 140px; display: flex; align-items: center; justify-content: center; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+.big-text { font-size: 20px !important; font-weight: 700; color: #a1c4fd; }
+
+button {
+  border: none; background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+  color: #1c2b45; padding: 15px; border-radius: 20px; font-weight: 700;
+  cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); font-size: 15px;
+}
+
+.visual-icon { font-size: 60px; animation: float 3s ease-in-out infinite; margin-top: 10px; }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+.final-wrapper { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; padding: 10px 0; }
+.foto-main { width: 115px; height: 115px; border-radius: 20px; border: 3px solid #fff; object-fit: cover; }
+.foto-side { width: 75px; height: 75px; border-radius: 15px; border: 2px solid #a1c4fd; object-fit: cover; }
+.emoji-decor { font-size: 20px; letter-spacing: 5px; margin: 5px 0; }
+</style>
+</head>
+<body>
+
+<div class="side left"><span>🌙</span><span>⭐</span><span>✨</span><span>💫</span><span>🌙</span></div>
+<div class="side right"><span>⭐</span><span>🌙</span><span>✨</span><span>💫</span><span>⭐</span></div>
+
+<audio id="bgm" src="https://pomf2.lain.la/f/nxamcqug.mp3" loop preload="auto"></audio>
+
+<div class="card">
+  <div id="content">
+    <div id="visual-icon" class="visual-icon">🎁</div>
+    <h2 id="title" style="font-size: 18px;">Ada kado buat kamu..</h2>
+    <div id="text" class="big-text"></div>
+    <div id="game-container">
+      <div class="memory-card" data-symbol="🧸">🧸</div>
+      <div class="memory-card" data-symbol="🐱">🐱</div>
+      <div class="memory-card" data-symbol="🍭">🍭</div>
+      <div class="memory-card" data-symbol="🧸">🧸</div>
+      <div class="memory-card" data-symbol="🐱">🐱</div>
+      <div class="memory-card" data-symbol="🍭">🍭</div>
+    </div>
+  </div>
+  <button id="main-btn" onclick="startGame()">Buka Kado 🌙</button>
+</div>
+
+<script>
+const pages = [
+  "U know me, right? sorry ya kalau aku tiba-tiba muncul dan ganggu waktu kamu sebentar. aku cuma mau bilang sesuatu yang mungkin selama ini cuma lewat di pikiran aja.",
+  "Tentang Roblox... anggep aja itu kado kecil dari aku. robux nya delay 7 hari yaa, jadi sabar nunggunya hehee. maaf ya cuma bisa kasih segitu, tapi yang paling penting sebenarnya bukan itu kok..",
+  "Bentar lagi kan mau puasa. jadi, aku sekeluarga mau minta maaf banget kalau selama ini aku ada salah, entah itu kata-kata atau sikapku yang pernah bikin kamu engga nyaman. aku beneran minta maaf yaa fer. 🙏",
+  "Jujur, keadaan lagi agak campur aduk sampai ortu suruh aku konsultasi ke psikiater. tapi tenang, aku engga bermaksud bikin kamu kepikiran. aku cuma pengen jujur aja sama apa yang aku alami sekarang.",
+  "Aku janji setelah ini engga akan ganggu kamu lagi. aku pengen kamu tenang dan fokus sama hal-hal yang bikin kamu happy. Berbahagialah selalu yaa fer. kamu orang baik.. ✨"
+];
+
+let pageIndex = 0;
+let musicPlayed = false;
+let flippedCards = [];
+let matchedCount = 0;
+let typingInterval;
+
+// Fungsi Emoji Jatuh
+function createEmoji() {
+  const emojis = ['🧸', '✨', '⭐', '☁️', '🌙'];
+  const e = document.createElement('div');
+  e.className = 'falling-emoji';
+  e.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+  e.style.left = Math.random() * 100 + "vw";
+  e.style.animationDuration = Math.random() * 3 + 2 + "s";
+  e.style.opacity = Math.random();
+  document.body.appendChild(e);
+  setTimeout(() => { e.remove(); }, 5000);
+}
+setInterval(createEmoji, 300);
+
+window.onload = () => {
+  typeText("Halo fer.. 👋 main game sebentar yaa, biar kadonya kebuka😋", "text", true);
+};
+
+function typeText(fullText, elementId, isBig) {
+  clearInterval(typingInterval);
+  let charIndex = 0;
+  const textEl = document.getElementById(elementId);
+  textEl.innerHTML = "";
+  textEl.className = isBig ? "big-text" : "";
+  typingInterval = setInterval(() => {
+    if (charIndex < fullText.length) {
+      textEl.innerHTML += fullText.charAt(charIndex);
+      charIndex++;
+    } else {
+      clearInterval(typingInterval);
+    }
+  }, 45);
+}
+
+function startGame() {
+  const music = document.getElementById("bgm");
+  if (!musicPlayed) { music.play(); musicPlayed = true; }
+  document.getElementById("visual-icon").innerText = "🫣";
+  document.getElementById("title").innerText = "Samakan Kartunya!";
+  document.getElementById("text").style.display = "none";
+  document.getElementById("main-btn").style.display = "none";
+  document.getElementById("game-container").style.display = "grid";
+  shuffleCards();
+}
+
+function shuffleCards() {
+  const container = document.getElementById("game-container");
+  const cards = Array.from(container.children);
+  cards.sort(() => Math.random() - 0.5);
+  cards.forEach(card => { container.appendChild(card); card.addEventListener('click', flipCard); });
+}
+
+function flipCard() {
+  if (flippedCards.length < 2 && !this.classList.contains('flipped')) {
+    this.classList.add('flipped');
+    flippedCards.push(this);
+    if (flippedCards.length === 2) checkMatch();
+  }
+}
+
+function checkMatch() {
+  const [card1, card2] = flippedCards;
+  if (card1.dataset.symbol === card2.dataset.symbol) {
+    matchedCount++; flippedCards = [];
+    if (matchedCount === 3) {
+      setTimeout(() => {
+        Swal.fire({title: 'Hore!', text: 'Permainan selesai! 🐱', icon: 'success', confirmButtonColor: '#a1c4fd'});
+        startMessage();
+      }, 500);
+    }
+  } else {
+    setTimeout(() => { card1.classList.remove('flipped'); card2.classList.remove('flipped'); flippedCards = []; }, 800);
+  }
+}
+
+function startMessage() {
+  document.getElementById("game-container").style.display = "none";
+  document.getElementById("title").style.display = "none";
+  document.getElementById("text").style.display = "flex";
+  document.getElementById("visual-icon").innerText = "🌙";
+  document.getElementById("main-btn").style.display = "block";
+  showPage();
+}
+
+function showPage() {
+  typeText(pages[pageIndex], "text", false);
+  const btn = document.getElementById("main-btn");
+  if (pageIndex === pages.length - 1) {
+    btn.innerText = "Selesai ✨";
+    btn.onclick = () => { 
+        btn.style.display = "none"; 
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        Swal.fire({
+            html: `
+              <div class="emoji-decor">✨🧸⭐🧸✨⭐🧸✨</div>
+              <div class="final-wrapper">
+                <img src="https://i.postimg.cc/zXhKFpyh/IMG-20260209-171856.jpg" class="foto-side">
+                <img src="https://i.postimg.cc/MTmw0CyX/IMG-20260209-163322.jpg" class="foto-main">
+                <img src="https://i.postimg.cc/MHb3cx24/caea47abc7076e5ff75672382af591c7.jpg" class="foto-side">
+              </div>
+              <div class="emoji-decor">🧸⭐✨🧸⭐✨🧸⭐</div>
+              <h3 style="color:#1c2b45; margin-top:10px;">Berbahagialah selalu yaa fer!</h3>
+            `,
+            confirmButtonColor: '#a1c4fd',
+            confirmButtonText: 'chat aku di wa yaa',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "https://wa.me/6287871530226?text=makasii kado dan pesannya, aku udah baca semuanya✨";
+            }
+        }); 
+    };
+  } else {
+    btn.innerText = "Lanjut 🌙";
+    btn.onclick = () => { pageIndex++; showPage(); };
+  }
+}
+</script>
+</body>
+</html>
